@@ -826,8 +826,8 @@ struct lws {
 	char redirects;
 	uint8_t rxflow_bitmap;
 	uint8_t bound_vhost_index;
+	uint8_t lsp_channel; /* which of stdin/out/err */
 #ifdef LWS_WITH_CGI
-	char cgi_channel; /* which of stdin/out/err */
 	char hdr_state;
 #endif
 #if defined(LWS_WITH_CLIENT)

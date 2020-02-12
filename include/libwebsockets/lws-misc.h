@@ -701,10 +701,73 @@ lws_ser_ru32be(const uint8_t *b);
 LWS_VISIBLE LWS_EXTERN uint64_t
 lws_ser_ru64be(const uint8_t *b);
 
-int
+LWS_VISIBLE LWS_EXTERN int
 lws_vbi_encode(uint64_t value, void *buf);
 
-int
+LWS_VISIBLE LWS_EXTERN int
 lws_vbi_decode(const void *buf, uint64_t *value, size_t len);
 
 ///@}
+
+struct lws_spawn_piped {
+	struct lws_dll2		dll;
+	lws_sorted_usec_list_t	sul;
+
+	const struct lws_role_ops *ops; /* null is RAW SKT */
+
+	struct lws		*stdwsi[3];
+	int			pipe_fds[3][2];
+
+	pid_t			child_pid;
+
+	uint8_t			do_setpgrp:1;
+};
+
+/**
+ * lws_spawn_piped() - spawn a child process with stdxxx redirected
+ *
+ * \p owner: lws_dll2_owner_t that lists all active spawns, or NULL
+ * \p vh: vhost to bind stdwsi to... from opt_parent if given
+ * \p tsi: tsi to bind stdwsi to... from opt_parent if given
+ * \p opt_parent: optional parent wsi for stdwsi
+ * \p lsp: object containing spawn state
+ * \p exec_array: argv for process to spawn
+ * \p env_array: environment for spawned process, NULL ends env list
+ * \p pcon: NULL, or vhost protocol name to bind stdwsi to
+ * \p timeout: optional us-resolution timeout, or zero
+ * \p timeout_cb: callback for timeout if nonzero, else NULL
+ *
+ * This spawns a child process managed in the lsp object and with attributes
+ * set in the arguments.  The stdin/out/err streams are redirected to pipes
+ * which are instantiated into wsi that become child wsi of \p parent.
+ *
+ * If \p owner is non-NULL, successful spawns join the given dll2 owner in the
+ * original process.
+ *
+ * If \p timeout is non-zero, successful spawns register a sul with the us-
+ * resolution timeout to callback \p timeout_cb, in the original process.
+ *
+ * Returns 0 if the spawn went OK or nonzero if it failed and was cleaned up.
+ * The spawned process continues asynchronously and this will return after
+ * starting it if all went well.
+ */
+LWS_VISIBLE LWS_EXTERN int
+lws_spawn_piped(struct lws_dll2_owner *owner, struct lws_vhost *vh, int tsi,
+		struct lws *opt_parent, struct lws_spawn_piped *lsp,
+		const char * const *exec_array, char **env_array,
+		const char *pcon, lws_usec_t timeout, sul_cb_t timeout_cb);
+
+LWS_VISIBLE LWS_EXTERN void
+lws_spawn_piped_destroy(struct lws_context *context, int tsi,
+			struct lws_spawn_piped *lsp);
+
+/*
+ * lws_spawn_piped_kill() - attempt to kill child process
+ *
+ * \p lsp: child object to kill
+ *
+ * Attempts to signal the child process in \p lsp to terminate.
+ */
+
+LWS_VISIBLE LWS_EXTERN int
+lws_spawn_piped_kill_child_process(struct lws_spawn_piped *lsp);
