@@ -21,7 +21,9 @@
  *  Included from lib/core/private.h if LWS_WITH_ESP32
  */
 
+#if !defined(MSG_NOSIGNAL)
 #define MSG_NOSIGNAL 0
+#endif
 #define SOMAXCONN 3
 
 #if defined(LWS_AMAZON_RTOS)
